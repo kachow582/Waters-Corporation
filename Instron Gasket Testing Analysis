@@ -1,0 +1,114 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+#Importing all Instron CSV files
+laser_sample_1 = pd.read_csv('laser_sample_1.csv')
+laser_sample_2 = pd.read_csv('laser_sample_2.csv')
+laser_sample_3 = pd.read_csv('laser_sample_3.csv')
+laser_sample_4 = pd.read_csv('laser_sample_4.csv')
+laser_sample_5 = pd.read_csv('laser_sample_5.csv')
+laser_sample_6 = pd.read_csv('laser_sample_6.csv')
+laser_sample_7 = pd.read_csv('laser_sample_7.csv')
+production_sample_1 = pd.read_csv('production_sample_1.csv')
+production_sample_2 = pd.read_csv('production_sample_2.csv')
+production_sample_3 = pd.read_csv('production_sample_3.csv')
+production_sample_4 = pd.read_csv('production_sample_4.csv')
+production_sample_5 = pd.read_csv('production_sample_5.csv')
+production_sample_6 = pd.read_csv('production_sample_6.csv')
+production_sample_7 = pd.read_csv('production_sample_7.csv')
+
+#List of files for easier iteration in data analysis
+files = [laser_sample_1,laser_sample_2,laser_sample_3,laser_sample_4,laser_sample_5,laser_sample_6,laser_sample_7,
+         production_sample_1,production_sample_2,production_sample_3,production_sample_4,production_sample_5,
+         production_sample_6,production_sample_7]
+
+#Dropping row that holds units for each column
+for f in files:
+    f.drop(labels=[0],axis=0,inplace=True)
+
+#Setting each dataframe to have all values be floats
+ls1 = laser_sample_1.astype('float64')
+ls2 = laser_sample_2.astype('float64')
+ls3 = laser_sample_3.astype('float64')
+ls4 = laser_sample_4.astype('float64')
+ls5 = laser_sample_5.astype('float64')
+ls6 = laser_sample_6.astype('float64')
+ls7 = laser_sample_7.astype('float64')
+ps1 = production_sample_1.astype('float64')
+ps2 = production_sample_2.astype('float64')
+ps3 = production_sample_3.astype('float64')
+ps4 = production_sample_4.astype('float64')
+ps5 = production_sample_5.astype('float64')
+ps6 = production_sample_6.astype('float64')
+ps7 = production_sample_7.astype('float64')
+floatfiles = [ls1,ls2,ls3,ls4,ls5,ls6,ls7,ps1,ps2,ps3,ps4,ps5,ps6,ps7]
+
+#cutting off rows where the force is less than 0
+for f in floatfiles:
+    drop_rows = []
+    for i in range(1,len(f)):
+        if f.Force.iloc[i] <= 0.004:
+            drop_rows.append(i)
+        elif f.Force.iloc[i] > .004:
+            break
+        elif type(f.Force.iloc[i]) is str:
+            continue
+    f.drop(labels=drop_rows,axis=0,inplace=True)
+    f.Displacement = f.Displacement - f.Displacement[i]
+
+#defining the lists for the data that we'll be analyzing
+five_thous = []
+six_thous = []
+seven_thous = []
+fat5thou = []
+fat6thou = []
+fat7thou = []
+
+#Iterating through every file and collecting their forces at 5, 6, and 7 thous
+for f in floatfiles:
+    for i in range(1,len(f.Displacement)):
+        if f.Displacement.iloc[i] >= .126 and f.Displacement.iloc[i] <= .128:
+            five_thous.append(f.Displacement.iloc[i])
+            fat5thou.append(f.Force.iloc[i])
+
+for f in floatfiles:
+     for i in range(1,len(f.Displacement)):
+        if f.Displacement.iloc[i] >= .153 and f.Displacement.iloc[i] <= .155:
+            six_thous.append(f.Displacement.iloc[i])
+            fat6thou.append(f.Force.iloc[i])
+
+for f in floatfiles:
+    for i in range(1,len(f.Displacement)):
+        if f.Displacement.iloc[i] >= .176 and f.Displacement.iloc[i] <= .179:
+            seven_thous.append(f.Displacement.iloc[i])
+            fat7thou.append(f.Force.iloc[i])
+#Outputs
+print('With no outliers, the average force applied on the gaskets when compressed 5 thous(.127mm) is {} kN.'.format(sum(fat5thou)/len(fat5thou)))
+print('With no outliers, the average force applied on the gaskets when compressed 6 thous(.152mm) is {} kN.'.format(sum(fat6thou)/len(fat6thou)))
+print('With no outliers, the average force applied on the gaskets when compressed 7 thous(.178mm) is {} kN.'.format(sum(fat7thou)/len(fat7thou)))
+
+
+#Plotting Dataframes
+ax = plt.gca()
+plt.ylabel('Force(kN)')
+plt.xlabel('Displacement(mm)')
+plt.plot(ls1.Displacement,ls1.Force,color='red')
+plt.plot(ls2.Displacement,ls2.Force,color='red')
+plt.plot(ls3.Displacement,ls3.Force,color='red')
+plt.plot(ls4.Displacement,ls4.Force,color='red')
+plt.plot(ls5.Displacement,ls5.Force,color='red')
+plt.plot(ls6.Displacement,ls6.Force,color='red')
+plt.plot(ls7.Displacement,ls7.Force,color='red')
+
+plt.plot(ps1.Displacement,ps1.Force,color='blue')
+plt.plot(ps2.Displacement,ps2.Force,color='blue')
+plt.plot(ps3.Displacement,ps3.Force,color='blue')
+plt.plot(ps4.Displacement,ps4.Force,color='blue')
+plt.plot(ps5.Displacement,ps5.Force,color='blue')
+plt.plot(ps6.Displacement,ps6.Force,color='blue')
+plt.plot(ps7.Displacement,ps7.Force,color='blue')
+
+
+plt.legend(['laser1','laser2','laser3','laser4','laser5','laser6','laser7','prod1','prod2','prod3','prod4','prod5','prod6','prod7'],loc='upper left', frameon=False,ncol = 2);
+plt.title('Compression vs Force Applied on Flow Cell Gaskets')
+plt.show()
