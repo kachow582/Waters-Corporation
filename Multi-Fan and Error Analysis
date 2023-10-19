@@ -1,0 +1,81 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+
+#instantiates folder to access files and filenames
+directory = 'data'
+
+expcfms = []
+exppressures = []
+fansanddata = {}
+stds = []
+pmins = []
+cfmmins = []
+meancfms = []
+meanps = []
+cfmstddevs = []
+stpstddevs = []
+
+plt.figure(figsize=(16,9))
+#iterates through files in the folder
+for filename in os.listdir(directory):
+  #reads file and calculates average cfm, static pressure, and extracts the fan model number
+  p = pd.read_csv(os.path.join(directory,filename),delimiter='\t')
+  modelnum = filename.split()[0]
+  maxcfm=0
+  maxstp=0
+  if modelnum not in fansanddata.keys(): fansanddata[modelnum] = list()
+
+  #prints the max cfm and and max static pressuer of the fans
+  if 'Fully Open' in filename:
+    maxcfm = np.mean(p.CFM)
+    cfmstddevs.append(np.std(p.CFM))
+    #print('Max CFM for the fan {} is {}'.format(modelnum,maxcfm))
+    expcfms.append(maxcfm)
+    fansanddata[modelnum].append(maxcfm)
+  elif 'Fully Closed' in filename:
+    maxstp = np.mean(p['Static Pressure (inches of water)'])
+    stpstddevs.append(np.std(p['Static Pressure (inches of water)']))
+    #print('Max Static Pressure for the fan {} is {}(in of water)'.format(modelnum,maxstp))
+    exppressures.append(maxstp)
+    fansanddata[modelnum].append(maxstp)
+theostp = [.32,1.12,.49,.35,.4,.42]
+
+plt.figure(figsize=(16,9))
+plt.bar(range(len(expcfms)),expcfms, yerr=cfmstddevs, align='center', alpha=0.5, ecolor='black', capsize=10)
+plt.xticks(range(len(expcfms)),fansanddata.keys(),fontsize=5)
+plt.title('Maximum CFMs of Fans with Standard Deviations')
+plt.xlabel('Fan Part Numbers')
+plt.ylabel('Flow Rate(CFM)')
+
+plt.figure(figsize=(16,9))
+plt.bar(range(len(exppressures)),exppressures, yerr=stpstddevs, align='center', alpha=0.5, ecolor='black', capsize=10)
+plt.xticks(range(len(expcfms)),fansanddata.keys(),fontsize=5)
+plt.title('Maximum Static Pressure of Fans with Standard Deviations')
+plt.ylabel('Static Pressure (in. of Water)')
+plt.xlabel('Fan Part Numbers')
+
+
+pcterrpres = []
+for i in range(len(exppressures)):
+  pcterrpres.append(100*abs(exppressures[i]-theostp[i])/exppressures[i])
+
+print(pcterrpres)
+print(theostp)
+
+plt.figure(figsize=(16,9))
+plt.scatter(theostp, pcterrpres)
+plt.title('Percent Error of Theoretical and Experimental Static Pressures')
+plt.ylabel('Percent Error')
+plt.xlabel('Theoretical Static Pressure')
+a, b = np.polyfit(theostp, pcterrpres, 1)
+theostp = np.array(theostp)
+plt.plot(theostp, a*theostp+b)
+plt.plot
+
+
+print(fansanddata)
+
+
+
