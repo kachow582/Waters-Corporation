@@ -1,0 +1,106 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+
+#instantiates folder to access files and filenames
+directory = 'data'
+
+expcfms = []
+exppressures = []
+fansanddata = {}
+stds = []
+pmins = []
+cfmmins = []
+meancfms = []
+meanps = []
+
+plt.figure(figsize=(16,9))
+#iterates through files in the folder
+for filename in os.listdir(directory):
+  #reads file and calculates average cfm, static pressure, and extracts the fan model number
+  p = pd.read_csv(os.path.join(directory,filename),delimiter='\t')
+  modelnum = filename.split()[0]
+  maxcfm=0
+  maxstp=0
+  if modelnum not in fansanddata.keys(): fansanddata[modelnum] = list()
+
+  #prints the max cfm and and max static pressuer of the fans
+  if 'Fully Open' in filename:
+    maxcfm = np.mean(p.CFM)
+    #print('Max CFM for the fan {} is {}'.format(modelnum,maxcfm))
+    expcfms.append(maxcfm)
+    fansanddata[modelnum].append(maxcfm)
+    plt.plot(p['Time (sec)'],p['CFM'])
+    stds.append(np.std(p['CFM']))
+    cfmmins.append(np.min(p.CFM))
+    meancfms.append(np.mean(p.CFM))
+  elif 'Fully Closed' in filename:
+    maxstp = np.mean(p['Static Pressure (inches of water)'])
+    #print('Max Static Pressure for the fan {} is {}(in of water)'.format(modelnum,maxstp))
+    exppressures.append(maxstp)
+    fansanddata[modelnum].append(maxstp)
+    pmins.append(np.min(p['Static Pressure (inches of water)']))
+    meanps.append(np.mean(p['Static Pressure (inches of water)']))
+plt.title('All CFMs vs Time')
+plt.xlabel('Time (sec)')
+plt.ylabel('CFM')
+plt.legend(['Trial 1','Trial 2','Trial 3','Trial 4','Trial 5'])
+plt.ylim(bottom = 70)
+plt.ylim(top = 90)
+
+theocfms = [77.7,77.7,77.7,77.7,77.7]
+theopressures= [.42,.42,.42,.42,.42]
+print(fansanddata)
+
+pctdifcfm = []
+for i in range(len(expcfms)):
+  pctdifcfm.append(100*abs(expcfms[i]-theocfms[i])/expcfms[i])
+
+
+plt.figure(figsize=(16,9))
+plt.bar(range(len(theocfms)),pctdifcfm)
+#plt.xticks(range(len(theocfms)),fansanddata.keys(),fontsize=5)
+plt.title('Percent Error of Theoretical and Experimental Fan CFMs')
+plt.ylabel('Percent Error')
+
+pcterrpres = []
+for i in range(len(exppressures)):
+  pctdifpres.append(100*abs(exppressures[i]-theopressures[i])/exppressures[i])
+
+
+plt.figure(figsize=(16,9))
+plt.bar(range(len(theopressures)),pctdifpres)
+plt.xticks(range(len(theocfms)),fansanddata.keys(),fontsize=5)
+plt.title('Percent Error of Theoretical and Experimental Static Pressures')
+plt.ylabel('Percent Error')
+plt.plot
+
+#GAGE R&R
+for i in range(len(expcfms)):
+
+  #need ranges and means of ranges
+  mean_of_cfmrange = max(expcfms) - min(expcfms)
+  mean_of_prange = max(exppressures) - min(exppressures)
+
+  #EV = mean range * k1. k1 is a coefficient determined from a table
+  cfm_equipment_variation = mean_of_cfmrange*(1/2.481)
+  p_equipment_variation = mean_of_prange*(1/2.481)
+
+  #Appraiser Variation = sqrt) range of means*k2 - EV^2/n*r
+  xdiffcfm = max(meancfms) - min(meancfms)
+  xdiffp = max(meanps) - min(meanps)
+  cfm_appraiser_variation = ((xdiffcfm/2.481)**2 - (cfm_equipment_variation**2/5))**.5
+  p_appraiser_variation = ((xdiffp/2.481)**2 - (p_equipment_variation**2/5))**.5
+
+  cfm_gage_rr = 100* (cfm_equipment_variation**2 + cfm_appraiser_variation**2)**.5
+  p_gage_rr = 100* (p_equipment_variation**2+ p_appraiser_variation**2)**.5
+
+
+print('The Gage Repeatability and Reproducibility rating for CFM measurement of fans is {}%.'.format(np.round(cfm_gage_rr,2)))
+print('The variance and standard error of the maximum CFMs are {} and {} respectively.'.format(np.round(np.var(expcfms),3),np.round(np.std(expcfms)/5**.5,3)))
+
+print('The Gage Repeatability and Reproducibility rating for Static Pressure measurement of fans is {}%'.format(np.round(p_gage_rr,3)))
+print('The variance and standard error of the maximum Static Pressure measurements are {} and {} respectively.'.format(np.round(np.var(exppressures),7),np.round(np.std(exppressures)/5**.5,5)))
+
+
